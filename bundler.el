@@ -63,20 +63,29 @@
 (require 'cl-lib)
 (require 'inf-ruby)
 
+(defgroup bundler nil
+  "Interact with the bundler ruby program"
+  :group 'ruby)
+
+(defcustom bundle-executable (executable-find "bundle")
+  "Bundle executable."
+  :type 'string
+  :group 'bundler)
+
 ;;;###autoload
 (defun bundle-open (gem-name)
   "Queries for a gem name and opens the location of the gem in dired."
   (interactive (list (completing-read "Bundled gem: " (bundle-list-gems-cached))))
-    (if (= (length gem-name) 0)
-        (message "No gem name given.")
-      (let ((gem-location (bundle-gem-location gem-name)))
-        (cond
-         ((eq gem-location 'no-gemfile)
-          (message "Could not find Gemfile"))
-         (gem-location
-          (dired gem-location))
-         (t
-          (message "Gem '%s' not found" gem-name))))))
+  (if (= (length gem-name) 0)
+      (message "No gem name given.")
+    (let ((gem-location (bundle-gem-location gem-name)))
+      (cond
+       ((eq gem-location 'no-gemfile)
+        (message "Could not find Gemfile"))
+       (gem-location
+        (dired gem-location))
+       (t
+        (message "Gem '%s' not found" gem-name))))))
 
 ;;;###autoload
 (defun bundle-console ()
@@ -123,8 +132,8 @@
               (if (not gemfile-dir)
                   "Gemfile"
                 (concat gemfile-dir "Gemfile")))))
-    (read-string (format "Gemfile (%s): " default-p)
-                 default-p nil default-p))))
+      (read-string (format "Gemfile (%s): " default-p)
+                   default-p nil default-p))))
   (if gemfile
       (if (file-readable-p gemfile)
           (progn
@@ -206,16 +215,16 @@ found."
   "Holds a hash table of gem lists per directory.")
 
 (cl-defun bundle-locate-gemfile (&optional (dir default-directory))
-         (let ((has-gemfile (directory-files dir nil "^Gemfile$"))
-               (is-root (equal dir "/")))
-           (cond
-            (has-gemfile dir)
-            (is-root
-             (print (format
-                     "No Gemfile found in either %s or any parent directory!"
-                     default-directory))
-             nil)
-            ((bundle-locate-gemfile (expand-file-name ".." dir))))))
+  (let ((has-gemfile (directory-files dir nil "^Gemfile$"))
+        (is-root (equal dir "/")))
+    (cond
+     (has-gemfile dir)
+     (is-root
+      (print (format
+              "No Gemfile found in either %s or any parent directory!"
+              default-directory))
+      nil)
+     ((bundle-locate-gemfile (expand-file-name ".." dir))))))
 
 (defun bundle-list-gems-cached ()
   (let* ((gemfile-dir (bundle-locate-gemfile))
